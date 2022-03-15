@@ -1,0 +1,20 @@
+{
+    "name": "DinBenDan Memo Plugin",
+    "description": "DinBenDan Memo Plugin",
+    "version": "1.0",
+    "manifest_version": 3,
+    "permissions": [
+        "activeTab",
+        "tabs",
+        "storage"
+    ],
+    "action": {
+        "default_popup": "index.html"
+    },
+    "content_scripts": [
+        {
+            "matches": ["https://dinbendon.net/*"],
+            "js": ["content-script.js"]
+        }
+    ]
+}
