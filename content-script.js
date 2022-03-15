@@ -6,8 +6,21 @@ function loadPlugin() {
     const appendStyle = () => {
         const styleTxt = `
             tr:hover { background-color: #eee; }
-            td { padding-bottom: 1rem; }
-            input { width: 100%; }
+            td {
+                position: relative; 
+                padding-bottom: 1rem; 
+            }
+            input { width: 100%; padding: 0.25rem; }
+            td label {
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                height: 100%;
+            }
         `;
         const head = document.getElementsByTagName('head')[0];
         const style = document.createElement('style');
@@ -156,7 +169,10 @@ function loadPlugin() {
                 DinBenDanState.setState(trKey, e.target.checked);
             })
             const cell = document.createElement('td');
-            cell.appendChild(checkboxEl)
+            const label = document.createElement('label');
+            cell.appendChild(label);
+            label.appendChild(checkboxEl)
+
             el.prepend(cell);
         })
     }
@@ -164,12 +180,26 @@ function loadPlugin() {
     const appendSingleMoneyChangeInput = (trEl) => {
         const inputEl = document.createElement('input');
         const trKey = getTrKey(trEl);
-        const state = MoneyChangeLSState.getState()
+        const state = MoneyChangeLSState.getState();
+
+        const setElBGColor = (el, color='#bbb') => {
+            el.style.background = color;
+        };
+        const resetElBGColor = (el) => {
+            el.style.background = null;
+        }
+
         inputEl.value = state[trKey] || '';
+        inputEl.type = 'number';
         inputEl.placeholder = '需找多少錢，找完直接清空即可';
         inputEl.addEventListener('input', (e) => {
             const val = e.target.value;
-            MoneyChangeLSState.setState(trKey, val)
+            MoneyChangeLSState.setState(trKey, val);
+            if(val) {
+                setElBGColor(trEl)
+            } else {
+                resetElBGColor(trEl);
+            }
         })
 
         const clearBtn = document.createElement('button');
@@ -177,6 +207,7 @@ function loadPlugin() {
         clearBtn.addEventListener('click', () => {
             inputEl.value = '';
             MoneyChangeLSState.setState(trKey, '');
+            resetElBGColor(trEl)
         })
         const cell = document.createElement('td');
 
