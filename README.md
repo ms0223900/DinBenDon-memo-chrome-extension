@@ -36,7 +36,7 @@
 - 開啟插件，直接點擊「載入插件」即可
   ![click plugin](https://imgur.com/5CtsWF5.jpg)
 - 成功加載的範例畫面
-  ![plugin loaded successed](https://imgur.com/A2mhuF6.jpg)
+  ![plugin loaded successed](https://imgur.com/jLH52pA.jpg)
 
 ### 想要更改過濾規則？
 
