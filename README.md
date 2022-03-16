@@ -32,9 +32,11 @@
 每次重新整理或進入「訂單總覽」頁面之後，需手動點擊「載入插件」
 
 - 進入任一個「訂單總覽」的頁面
+  ![open page](https://imgur.com/kdv8m5T.jpg)
 - 開啟插件，直接點擊「載入插件」即可
+  ![click plugin](https://imgur.com/5CtsWF5.jpg)
 - 成功加載的範例畫面
-  ![](https://imgur.com/A2mhuF6.jpg)
+  ![plugin loaded successed](https://imgur.com/A2mhuF6.jpg)
 
 ### 想要更改過濾規則？
 
