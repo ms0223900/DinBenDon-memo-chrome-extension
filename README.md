@@ -24,15 +24,17 @@
   ![pin the extension](https://imgur.com/A1vT0qR.jpg)
 - 點擊寫著「D」的插件，將其畫面開啟，就可使用了
   ![open it](https://imgur.com/dbPan48.jpg)
-- 成功加載的範例畫面
-  ![](https://imgur.com/A2mhuF6.jpg)
 
 備註：Edge 的做法可如法炮製
 
 ### 如何使用?
 
-- 進入任一個點餐的頁面
-- 直接點擊加載插件即可
+每次重新整理或進入「訂單總覽」頁面之後，需手動點擊「載入插件」
+
+- 進入任一個「訂單總覽」的頁面
+- 開啟插件，直接點擊「載入插件」即可
+- 成功加載的範例畫面
+  ![](https://imgur.com/A2mhuF6.jpg)
 
 ### 想要更改過濾規則？
 
