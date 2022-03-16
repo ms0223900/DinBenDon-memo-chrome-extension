@@ -20,6 +20,7 @@ function loadPlugin() {
                 justify-content: center;
                 width: 100%;
                 height: 100%;
+                cursor: pointer;
             }
         `;
         const head = document.getElementsByTagName('head')[0];
@@ -189,7 +190,12 @@ function loadPlugin() {
             el.style.background = null;
         }
 
+        const inputtedValFromState = state[trKey];
+        if(inputtedValFromState) {
+            setElBGColor(trEl)
+        }
         inputEl.value = state[trKey] || '';
+        
         inputEl.type = 'number';
         inputEl.placeholder = '需找多少錢，找完直接清空即可';
         inputEl.addEventListener('input', (e) => {
