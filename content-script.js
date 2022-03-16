@@ -3,14 +3,34 @@ function loadPlugin() {
         TR_INNER_TEXT_FOR_FILTER: /市場/g
     }
 
+    const debounce = (cb, timeMs = 100) => {
+        let timer;
+        const fn = (...params) => {
+            let res;
+            if (timer) return;
+            timer = setTimeout(() => {
+                res = cb(...params);
+                clearTimeout(timer);
+                timer = undefined;
+                // if (!timer) {
+                // }
+            }, timeMs);
+            return res;
+        };
+        return fn;
+    }
+
     const appendStyle = () => {
         const styleTxt = `
             tr:hover { background-color: #eee; }
+            
             td {
                 position: relative; 
                 padding-bottom: 1rem; 
             }
+            
             input { width: 100%; padding: 0.25rem; }
+            
             td label {
                 position: absolute;
                 top: 0;
@@ -21,6 +41,21 @@ function loadPlugin() {
                 width: 100%;
                 height: 100%;
                 cursor: pointer;
+            }
+
+            #searchInputWrapper {
+                z-index: 1000;
+                position: sticky;
+                top: 0;
+                background: #fff;
+                box-shadow: 0 6px 10px #00000010;
+            }
+
+            #searchInput {
+                margin: 1rem;
+                padding: 0.5rem;
+                min-width: 300px;
+                width: auto;
             }
         `;
         const head = document.getElementsByTagName('head')[0];
@@ -42,19 +77,14 @@ function loadPlugin() {
         })
     }
 
-    const clickTab = () => {
-        const tabBtn = document.querySelector('a[aria-controls="by-buyer-tab"]');
-        // console.log(tabBtn);
-        tabBtn && tabBtn.click();
-    }
-
     const getTodayStr = () => {
         const today = new Date();
         return `${today.getMonth()}-${today.getDate()}`
     }
 
-    const hideTrEl = (el) => {
+    const hideTrEl = (el = document.createElement('tr')) => {
         el.style.display = 'none';
+        el.setAttribute('is-hidden', true);
     }
     const hideUselessComponents = () => {
         const header = document.getElementById('header');
@@ -178,12 +208,101 @@ function loadPlugin() {
         })
     }
 
+    const prependSearchInput = () => {
+        const {
+            trElList
+        } = getEls();
+
+        const trElListForShowAndHide = [...trElList].filter(el => {
+            // console.log(el.getAttribute('is-hidden'))
+            return !el.getAttribute('is-hidden')
+        });
+
+        function blurMatch(val = '', inputVal = '') {
+            if(!inputVal) return true;
+
+            const inputValLength = inputVal.length;
+            let valArr = val.toLocaleLowerCase().split('').filter(s => !s.match(/\t|\n/g));
+            const inputValArr = inputVal.toLocaleLowerCase().split('');
+            let matchedIdxList = []
+            let matchedCount = 0;
+
+            for (let i = 0; i < inputValArr.length; i++) {
+                const str = inputValArr[i];
+                const matchedIdx = valArr.findIndex(v => v === str);
+                if(matchedIdx !== -1) {
+                    if(matchedIdxList.length === 0 || matchedIdx > matchedIdxList[matchedIdxList.length - 1]) {
+                        matchedIdxList.push(matchedIdx);
+                        matchedCount += 1;
+                    }
+                }
+                // console.log(str, valArr)
+            }
+
+            return matchedCount === inputValLength;
+        }
+
+        function checkTrElShouldHide(trEl, val) {
+            const elInnerTxt = trEl.innerText?.toLowerCase();
+            const valTxt = val.toLowerCase()
+            console.log(elInnerTxt, valTxt)
+            const isElTextIncludesVal = blurMatch(elInnerTxt, valTxt);
+            if(!isElTextIncludesVal) return true
+            return false
+        }
+
+        const wrapperEl = document.createElement('div');
+        wrapperEl.id = 'searchInputWrapper';
+
+        const inputEl = document.createElement('input');
+        inputEl.id = 'searchInput';
+        inputEl.placeholder = '輸入關鍵字搜尋';
+        inputEl.autofocus = true;
+
+        const clearBtn = document.createElement('button');
+        clearBtn.id = 'clearInputBtn';
+        clearBtn.innerText = '清空搜尋'
+
+        const handleSearch = (e) => {
+            const val = e.target.value;
+            if(!val) {
+                trElListForShowAndHide.forEach(el => {
+                    // el.style.visibility = 'visible';
+                    el.style.display = null
+                })
+                return;
+            }
+            trElListForShowAndHide.forEach(el => {
+                const shouldHide = checkTrElShouldHide(el, val);
+                if(shouldHide) {
+                    // 用collapse，會抓不到其中的innerText
+                    // el.style.visibility = 'collapse';
+                    el.style.display = 'none';
+                } else {
+                    // el.style.visibility = 'visible';
+                    el.style.display = null;
+                }
+            })
+        }
+
+        inputEl.addEventListener('input', debounce(handleSearch, 100))
+        clearBtn.addEventListener('click', () => {
+            inputEl.value = '';
+            handleSearch({ target: { value: '', }})
+        })
+
+        wrapperEl.appendChild(inputEl);
+        wrapperEl.appendChild(clearBtn);
+
+        document.body.prepend(wrapperEl);
+    }
+
     const appendSingleMoneyChangeInput = (trEl) => {
         const inputEl = document.createElement('input');
         const trKey = getTrKey(trEl);
         const state = MoneyChangeLSState.getState();
 
-        const setElBGColor = (el, color='#bbb') => {
+        const setElBGColor = (el, color = '#bbb') => {
             el.style.background = color;
         };
         const resetElBGColor = (el) => {
@@ -191,17 +310,17 @@ function loadPlugin() {
         }
 
         const inputtedValFromState = state[trKey];
-        if(inputtedValFromState) {
+        if (inputtedValFromState) {
             setElBGColor(trEl)
         }
         inputEl.value = state[trKey] || '';
-        
+
         inputEl.type = 'number';
         inputEl.placeholder = '需找多少錢，找完直接清空即可';
         inputEl.addEventListener('input', (e) => {
             const val = e.target.value;
             MoneyChangeLSState.setState(trKey, val);
-            if(val) {
+            if (val) {
                 setElBGColor(trEl)
             } else {
                 resetElBGColor(trEl);
@@ -242,7 +361,8 @@ function loadPlugin() {
         const filteredTrElList = [...trElList].filter(el => checkTrIsOurGroup(el));
 
         const getSinglePrice = (trEl) => {
-            const priceTxt = trEl.getElementsByTagName('td')[2]?.innerText;
+            const tdElList = trEl.getElementsByTagName('td')
+            const priceTxt = tdElList[2]?.innerText;
             // console.log(priceTxt);
             return Number(priceTxt);
         }
@@ -257,6 +377,11 @@ function loadPlugin() {
         tableEl.appendChild(totalEl);
     }
 
+    function clickTab() {
+        const tabBtn = document.querySelector('a[aria-controls="by-buyer-tab"]');
+        // console.log(tabBtn);
+        tabBtn && tabBtn.click();
+    }
     function main() {
         clickTab();
         DinBenDanState.init();
@@ -273,6 +398,7 @@ function loadPlugin() {
 
             prependCheckbox();
             appendMoneyChangeInputListToTrList();
+            prependSearchInput();
         }, 300);
     }
 
@@ -287,7 +413,7 @@ const MESSAGE = {
 chrome.runtime.onMessage.addListener((mes, sender, sendRes) => {
     switch (mes.action) {
         case MESSAGE.INIT:
-            if(document.getElementById('totalPrice')) return;
+            if (document.getElementById('totalPrice')) return;
             loadPlugin();
             break;
         case MESSAGE.RELOAD_PAGE:
