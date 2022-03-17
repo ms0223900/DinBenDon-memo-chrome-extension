@@ -24,6 +24,14 @@ function loadPlugin() {
         return fn;
     }
 
+    const libs = {
+        updateElStyleByStyleObj: (el = document.createElement('div'), styleObj = {}) => {
+            for (const styleKey of Object.keys(styleObj)) {
+                el.style[styleKey.toString()] = styleObj[styleKey.toString()]
+            }
+        }
+    }
+
     const appendStyle = () => {
         const styleTxt = `
             tr:hover { background-color: #eee; }
@@ -72,9 +80,11 @@ function loadPlugin() {
         if (el.innerText.match(regex.TR_INNER_TEXT_FOR_FILTER)) return true;
         return false;
     }
+    let _trElList = [];
     const getEls = () => {
         const tableEl = document.querySelector('section#by-buyer-tab table');
-        const trElList = [...tableEl.getElementsByTagName('tr')];
+        const trElList = _trElList.length > 0 ? _trElList : [...tableEl.getElementsByTagName('tr')];
+        _trElList = trElList;
         return ({
             tableEl,
             trElList,
@@ -94,7 +104,7 @@ function loadPlugin() {
         const header = document.getElementById('header');
         header.style.display = 'none';
         const titles = document.getElementsByTagName('h3');
-        console.log(titles);
+        // console.log(titles);
         titles && [...titles].forEach(el => el.style.display = 'none');
         const tabList = document.querySelector('ul[role="tablist"]');
         tabList.style.display = 'none';
@@ -140,7 +150,7 @@ function loadPlugin() {
             return JSON.parse(res);
         },
 
-        setState(key = '市場-ABC', checked = true) {
+        setState(key = '市場-ABC', checked) {
             const state = this.getState();
             state[key] = checked;
             if (!checked) {
@@ -170,6 +180,107 @@ function loadPlugin() {
         }
     }
 
+    const actions = {
+        UPDATE_CHECKED_BY_KEY: 'UPDATE_CHECKED_BY_KEY',
+        UPDATE_CHANGE_VAL_BY_KEY: 'UPDATE_CHANGE_VAL_BY_KEY',
+        RESET_CHANGE_VAL_BY_KEY: 'RESET_CHANGE_VAL_BY_KEY',
+    }
+    const CtxState = (() => {
+        const listeners = [];
+        let state = {
+            checkedKeyVal: {},
+            moneyChangesKeyVal: {},
+        }
+
+        const addListener = (listener = (s = state) => {}) => {
+            listeners.push(listener);
+        }
+
+        const updateAllListeners = () => {
+            listeners.forEach(l => l(state))
+        }
+
+        const getState = () => {
+            return state;
+        }
+
+        const setState = (newS) => {
+            const _newS = typeof newS === 'function' ? newS(state) : newS;
+            state = {
+                ...state,
+                ..._newS
+            }
+            updateAllListeners()
+            return state;
+        }
+
+        const dispatch = (action, payload) => {
+            switch (action) {
+                case actions.UPDATE_CHANGE_VAL_BY_KEY: {
+                    const {
+                        key,
+                        val,
+                    } = payload;
+                    setState((s) => ({
+                        ...s,
+                        moneyChangesKeyVal: {
+                            ...s.moneyChangesKeyVal,
+                            [key]: val,
+                        }
+                    }))
+                    break;
+                }
+
+                case actions.RESET_CHANGE_VAL_BY_KEY: {
+                    const {
+                        key,
+                    } = payload;
+                    setState((s) => ({
+                        ...s,
+                        moneyChangesKeyVal: {
+                            ...s.moneyChangesKeyVal,
+                            [key]: '',
+                        }
+                    }))
+                    break;
+                }
+
+                case actions.UPDATE_CHECKED_BY_KEY: {
+                    const {
+                        key,
+                        checked,
+                    } = payload;
+                    setState((s) => ({
+                        ...s,
+                        checkedKeyVal: {
+                            ...s.checkedKeyVal,
+                            [key]: checked,
+                        }
+                    }))
+                    break;
+                }
+                    
+                default:
+                    break;
+            }
+        }
+
+        const initByLSState = (checkedLSState, changeLSState) => {
+            // console.log(checkedLSState)
+            setState({
+                checkedKeyVal: checkedLSState,
+                moneyChangesKeyVal: changeLSState
+            });
+        }
+
+        return ({
+            getState,
+            addListener,
+            dispatch,
+            initByLSState,
+        })
+    })()
+
     const getTrKey = (el) => {
         // prettier-ignore
         return el.querySelector('div.merged-key')?.innerText
@@ -189,15 +300,6 @@ function loadPlugin() {
         } = getEls();
         const LSState = DinBenDanState.getState();
 
-        const fadeCheckedTr = (trKey = '市場-aaa', trEl = document.createElement('tr')) => (checked = false) => {
-            const smallChangeToGiveState = MoneyChangeLSState.getStateByKey(trKey);
-            // console.log('smallChangeToGiveState: ', smallChangeToGiveState)
-            if (checked && !smallChangeToGiveState) {
-                trEl.style.opacity = 0.2
-                return;
-            }
-            trEl.style.opacity = 1
-        }
 
         [...trElList].forEach((el, idx) => {
             const isOurGroup = checkTrIsOurGroup(el);
@@ -207,22 +309,22 @@ function loadPlugin() {
 
             const checkboxEl = document.createElement('input');
             // checkboxEl.style.marginTop = '10px';
-            
+
             const trKey = getTrKey(el);
             const checkedFromLSState = LSState[trKey];
-            const fadeTrElFn = fadeCheckedTr(trKey, el)
 
             // console.log(trKey);
             checkboxEl.setAttribute('type', 'checkbox');
             setCheckboxChecked(checkboxEl, checkedFromLSState);
-            fadeTrElFn(checkedFromLSState)
 
             checkboxEl.addEventListener('change', e => {
                 const {
                     checked,
-                } = e.target
-                DinBenDanState.setState(trKey, checked);
-                fadeTrElFn(checked)
+                } = e.target;
+                CtxState.dispatch(actions.UPDATE_CHECKED_BY_KEY, {
+                    key: trKey,
+                    checked,
+                })
             })
             const cell = document.createElement('td');
             const label = document.createElement('label');
@@ -270,7 +372,7 @@ function loadPlugin() {
         function checkTrElShouldHide(trEl, val) {
             const elInnerTxt = trEl.innerText?.toLowerCase();
             const valTxt = val.toLowerCase()
-            console.log(elInnerTxt, valTxt)
+            // console.log(elInnerTxt, valTxt)
             const isElTextIncludesVal = blurMatch(elInnerTxt, valTxt);
             if (!isElTextIncludesVal) return true
             return false
@@ -301,7 +403,6 @@ function loadPlugin() {
                 const shouldHide = checkTrElShouldHide(el, val);
                 if (shouldHide) {
                     // 用collapse，會抓不到其中的innerText
-                    // el.style.visibility = 'collapse';
                     el.style.display = 'none';
                 } else {
                     // el.style.visibility = 'visible';
@@ -329,47 +430,37 @@ function loadPlugin() {
     const appendSingleMoneyChangeInput = (trEl) => {
         const inputEl = document.createElement('input');
         const trKey = getTrKey(trEl);
-        const state = MoneyChangeLSState.getState();
-
-        const setElHighlight = (el, color = '#bbb') => {
-            el.style.background = color;
-            el.setAttribute(EL_ATTRIBUTES.change, true)
-        };
-        const resetElHighlight = (el = document.createElement('tr')) => {
-            el.style.background = null;
-            el.removeAttribute(EL_ATTRIBUTES.change)
-        }
-
-        const inputtedValFromState = state[trKey];
-        if (inputtedValFromState) {
-            setElHighlight(trEl)
-        }
-        inputEl.value = state[trKey] || '';
 
         inputEl.type = 'number';
         inputEl.placeholder = '需找多少錢，找完直接清空即可';
         inputEl.addEventListener('input', (e) => {
             const val = e.target.value;
-            MoneyChangeLSState.setState(trKey, val);
-            if (val) {
-                setElHighlight(trEl)
-            } else {
-                resetElHighlight(trEl);
-            }
+            // console.log(val);
+            CtxState.dispatch(actions.UPDATE_CHANGE_VAL_BY_KEY, {
+                key: trKey,
+                val,
+            })
         })
 
         const clearBtn = document.createElement('button');
         clearBtn.innerText = '已找錢（清空）'
         clearBtn.addEventListener('click', () => {
-            inputEl.value = '';
-            MoneyChangeLSState.setState(trKey, '');
-            resetElHighlight(trEl)
+            CtxState.dispatch(actions.RESET_CHANGE_VAL_BY_KEY, {
+                key: trKey,
+            })
         })
         const cell = document.createElement('td');
 
         cell.appendChild(inputEl);
         cell.appendChild(clearBtn);
         trEl.appendChild(cell);
+
+        CtxState.addListener((s) => {
+            const { moneyChangesKeyVal} = s
+            const val = moneyChangesKeyVal[trKey];
+
+            inputEl.value = val || '';
+        })
     }
     const appendMoneyChangeInputListToTrList = () => {
         const {
@@ -408,6 +499,40 @@ function loadPlugin() {
         tableEl.appendChild(totalEl);
     }
 
+    const updateSingleTrEl = (trEl) => {
+        const trKey = getTrKey(trEl);
+
+        CtxState.addListener((s) => {
+            const { moneyChangesKeyVal, checkedKeyVal, } = s;
+            const checked = checkedKeyVal[trKey];
+            const moneyChangeVal = moneyChangesKeyVal[trKey];
+            // console.log(trKey, moneyChangeVal)
+
+            const styleObj = {
+                opacity: (checked && !moneyChangeVal) ? 0.2 : 1,
+                background: moneyChangeVal ? '#bbb' : null,
+            }
+            libs.updateElStyleByStyleObj(trEl, styleObj);
+        })
+
+        CtxState.addListener((s) => {
+            const { moneyChangesKeyVal, checkedKeyVal, } = s;
+            const checked = checkedKeyVal[trKey];
+            console.log(checked)
+            const moneyChangeVal = moneyChangesKeyVal[trKey];
+
+            DinBenDanState.setState(trKey, checked);
+            MoneyChangeLSState.setState(trKey, moneyChangeVal);
+        })
+    }
+    const initTrElList = () => {
+        const {
+            trElList
+        } = getEls();
+        trElList.filter(checkTrIsOurGroup).forEach(el => updateSingleTrEl(el))
+    }
+
+
     function clickTab() {
         const tabBtn = document.querySelector('a[aria-controls="by-buyer-tab"]');
         // console.log(tabBtn);
@@ -427,10 +552,15 @@ function loadPlugin() {
             hideUselessComponents();
             hideNotOurGroupTrList(trElList)
             appendTotalPrices();
+            initTrElList()
 
             prependCheckbox();
             appendMoneyChangeInputListToTrList();
             prependSearchInput();
+            CtxState.initByLSState(
+                DinBenDanState.getState(),
+                MoneyChangeLSState.getState()
+            )
         }, 300);
     }
 
