@@ -3,6 +3,10 @@ function loadPlugin() {
         TR_INNER_TEXT_FOR_FILTER: /市場/g
     }
 
+    const EL_ATTRIBUTES = {
+        change: 'small-change-to-give',
+    }
+
     const debounce = (cb, timeMs = 100) => {
         let timer;
         const fn = (...params) => {
@@ -154,6 +158,11 @@ function loadPlugin() {
             return JSON.parse(res);
         },
 
+        getStateByKey(key = '市場-ABC') {
+            const state = this.getState();
+            return state[key];
+        },
+
         setState(key = '市場-ABC', val = '') {
             const state = this.getState();
             state[key] = val;
@@ -180,6 +189,16 @@ function loadPlugin() {
         } = getEls();
         const LSState = DinBenDanState.getState();
 
+        const fadeCheckedTr = (trKey = '市場-aaa', trEl = document.createElement('tr')) => (checked = false) => {
+            const smallChangeToGiveState = MoneyChangeLSState.getStateByKey(trKey);
+            // console.log('smallChangeToGiveState: ', smallChangeToGiveState)
+            if (checked && !smallChangeToGiveState) {
+                trEl.style.opacity = 0.2
+                return;
+            }
+            trEl.style.opacity = 1
+        }
+
         [...trElList].forEach((el, idx) => {
             const isOurGroup = checkTrIsOurGroup(el);
             if (!isOurGroup) {
@@ -188,16 +207,22 @@ function loadPlugin() {
 
             const checkboxEl = document.createElement('input');
             // checkboxEl.style.marginTop = '10px';
-
+            
             const trKey = getTrKey(el);
-            const checked = LSState[trKey];
+            const checkedFromLSState = LSState[trKey];
+            const fadeTrElFn = fadeCheckedTr(trKey, el)
 
             // console.log(trKey);
             checkboxEl.setAttribute('type', 'checkbox');
-            setCheckboxChecked(checkboxEl, checked)
+            setCheckboxChecked(checkboxEl, checkedFromLSState);
+            fadeTrElFn(checkedFromLSState)
 
             checkboxEl.addEventListener('change', e => {
-                DinBenDanState.setState(trKey, e.target.checked);
+                const {
+                    checked,
+                } = e.target
+                DinBenDanState.setState(trKey, checked);
+                fadeTrElFn(checked)
             })
             const cell = document.createElement('td');
             const label = document.createElement('label');
@@ -219,7 +244,7 @@ function loadPlugin() {
         });
 
         function blurMatch(val = '', inputVal = '') {
-            if(!inputVal) return true;
+            if (!inputVal) return true;
 
             const inputValLength = inputVal.length;
             let valArr = val.toLocaleLowerCase().split('').filter(s => !s.match(/\t|\n/g));
@@ -230,8 +255,8 @@ function loadPlugin() {
             for (let i = 0; i < inputValArr.length; i++) {
                 const str = inputValArr[i];
                 const matchedIdx = valArr.findIndex(v => v === str);
-                if(matchedIdx !== -1) {
-                    if(matchedIdxList.length === 0 || matchedIdx > matchedIdxList[matchedIdxList.length - 1]) {
+                if (matchedIdx !== -1) {
+                    if (matchedIdxList.length === 0 || matchedIdx > matchedIdxList[matchedIdxList.length - 1]) {
                         matchedIdxList.push(matchedIdx);
                         matchedCount += 1;
                     }
@@ -247,7 +272,7 @@ function loadPlugin() {
             const valTxt = val.toLowerCase()
             console.log(elInnerTxt, valTxt)
             const isElTextIncludesVal = blurMatch(elInnerTxt, valTxt);
-            if(!isElTextIncludesVal) return true
+            if (!isElTextIncludesVal) return true
             return false
         }
 
@@ -265,7 +290,7 @@ function loadPlugin() {
 
         const handleSearch = (e) => {
             const val = e.target.value;
-            if(!val) {
+            if (!val) {
                 trElListForShowAndHide.forEach(el => {
                     // el.style.visibility = 'visible';
                     el.style.display = null
@@ -274,7 +299,7 @@ function loadPlugin() {
             }
             trElListForShowAndHide.forEach(el => {
                 const shouldHide = checkTrElShouldHide(el, val);
-                if(shouldHide) {
+                if (shouldHide) {
                     // 用collapse，會抓不到其中的innerText
                     // el.style.visibility = 'collapse';
                     el.style.display = 'none';
@@ -288,7 +313,11 @@ function loadPlugin() {
         inputEl.addEventListener('input', debounce(handleSearch, 100))
         clearBtn.addEventListener('click', () => {
             inputEl.value = '';
-            handleSearch({ target: { value: '', }})
+            handleSearch({
+                target: {
+                    value: '',
+                }
+            })
         })
 
         wrapperEl.appendChild(inputEl);
@@ -302,16 +331,18 @@ function loadPlugin() {
         const trKey = getTrKey(trEl);
         const state = MoneyChangeLSState.getState();
 
-        const setElBGColor = (el, color = '#bbb') => {
+        const setElHighlight = (el, color = '#bbb') => {
             el.style.background = color;
+            el.setAttribute(EL_ATTRIBUTES.change, true)
         };
-        const resetElBGColor = (el) => {
+        const resetElHighlight = (el = document.createElement('tr')) => {
             el.style.background = null;
+            el.removeAttribute(EL_ATTRIBUTES.change)
         }
 
         const inputtedValFromState = state[trKey];
         if (inputtedValFromState) {
-            setElBGColor(trEl)
+            setElHighlight(trEl)
         }
         inputEl.value = state[trKey] || '';
 
@@ -321,9 +352,9 @@ function loadPlugin() {
             const val = e.target.value;
             MoneyChangeLSState.setState(trKey, val);
             if (val) {
-                setElBGColor(trEl)
+                setElHighlight(trEl)
             } else {
-                resetElBGColor(trEl);
+                resetElHighlight(trEl);
             }
         })
 
@@ -332,7 +363,7 @@ function loadPlugin() {
         clearBtn.addEventListener('click', () => {
             inputEl.value = '';
             MoneyChangeLSState.setState(trKey, '');
-            resetElBGColor(trEl)
+            resetElHighlight(trEl)
         })
         const cell = document.createElement('td');
 
@@ -382,6 +413,7 @@ function loadPlugin() {
         // console.log(tabBtn);
         tabBtn && tabBtn.click();
     }
+
     function main() {
         clickTab();
         DinBenDanState.init();
