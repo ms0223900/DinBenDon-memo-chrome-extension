@@ -69,6 +69,13 @@ function loadPlugin() {
                 min-width: 300px;
                 width: auto;
             }
+
+            #toggleHiddenCheckedLabel {
+                display: flex;
+                align-items: center;
+                width: 200px;
+                margin: 0.5rem;
+            }
         `;
         const head = document.getElementsByTagName('head')[0];
         const style = document.createElement('style');
@@ -184,19 +191,25 @@ function loadPlugin() {
         UPDATE_CHECKED_BY_KEY: 'UPDATE_CHECKED_BY_KEY',
         UPDATE_CHANGE_VAL_BY_KEY: 'UPDATE_CHANGE_VAL_BY_KEY',
         RESET_CHANGE_VAL_BY_KEY: 'RESET_CHANGE_VAL_BY_KEY',
+        UPDATE_HIDE_CHECKED: 'UPDATE_HIDE_CHECKED',
     }
     const CtxState = (() => {
         const listeners = [];
         let state = {
             checkedKeyVal: {},
             moneyChangesKeyVal: {},
+            toggleHideCheckedTrList: true,
+        }
+        let prevState = {
+            ...state,
         }
 
-        const addListener = (listener = (s = state) => {}) => {
+        const addListener = (listener = (s = state) => {}, watchDependenciesFn = [(s = state) => s.checkedKeyVal]) => {
             listeners.push(listener);
         }
 
         const updateAllListeners = () => {
+            if(JSON.stringify(state) === JSON.stringify(prevState)) return;
             listeners.forEach(l => l(state))
         }
 
@@ -204,13 +217,14 @@ function loadPlugin() {
             return state;
         }
 
-        const setState = (newS) => {
+        const setState = (newS = state) => {
             const _newS = typeof newS === 'function' ? newS(state) : newS;
             state = {
                 ...state,
                 ..._newS
             }
-            updateAllListeners()
+            updateAllListeners();
+            prevState = JSON.parse(JSON.stringify(state)); // deep clone
             return state;
         }
 
@@ -257,6 +271,16 @@ function loadPlugin() {
                             [key]: checked,
                         }
                     }))
+                    break;
+                }
+
+                case actions.UPDATE_HIDE_CHECKED: {
+                    const {
+                        checked,
+                    } = payload
+                    setState({
+                        toggleHideCheckedTrList: checked,
+                    })
                     break;
                 }
                     
@@ -427,6 +451,27 @@ function loadPlugin() {
         document.body.prepend(wrapperEl);
     }
 
+    const prependListToggleInput = () => {
+        const label = document.createElement('label');
+        label.id = 'toggleHiddenCheckedLabel'
+        const txt = document.createElement('span');
+        txt.innerText = '隱藏已勾選的清單'
+
+        const toggleCheckboxEl = document.createElement('input');
+        toggleCheckboxEl.type = 'checkbox';
+        toggleCheckboxEl.checked = CtxState.getState().toggleHideCheckedTrList;
+        toggleCheckboxEl.addEventListener('change', (e) => {
+            CtxState.dispatch(actions.UPDATE_HIDE_CHECKED, {
+                checked: e.target.checked,
+            })
+        })
+
+        label.appendChild(toggleCheckboxEl);
+        label.appendChild(txt);
+
+        document.body.prepend(label)
+    }
+
     const appendSingleMoneyChangeInput = (trEl) => {
         const inputEl = document.createElement('input');
         const trKey = getTrKey(trEl);
@@ -518,11 +563,23 @@ function loadPlugin() {
         CtxState.addListener((s) => {
             const { moneyChangesKeyVal, checkedKeyVal, } = s;
             const checked = checkedKeyVal[trKey];
-            console.log(checked)
+            // console.log(checked)
             const moneyChangeVal = moneyChangesKeyVal[trKey];
 
             DinBenDanState.setState(trKey, checked);
             MoneyChangeLSState.setState(trKey, moneyChangeVal);
+        })
+
+        CtxState.addListener((s) => {
+            const { toggleHideCheckedTrList, checkedKeyVal, moneyChangesKeyVal } = s;
+            const checked = checkedKeyVal[trKey];
+            const moneyChangeVal = moneyChangesKeyVal[trKey];
+            
+            const shouldHidden = checked && toggleHideCheckedTrList && !moneyChangeVal
+            const styleObj = {
+                visibility: shouldHidden ? 'collapse' : null
+            }
+            libs.updateElStyleByStyleObj(trEl, styleObj)
         })
     }
     const initTrElList = () => {
@@ -556,6 +613,7 @@ function loadPlugin() {
 
             prependCheckbox();
             appendMoneyChangeInputListToTrList();
+            prependListToggleInput();
             prependSearchInput();
             CtxState.initByLSState(
                 DinBenDanState.getState(),
