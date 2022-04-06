@@ -39,6 +39,13 @@
 
 備註：Edge 的做法可如法炮製
 
+### 安裝新版
+bug修復或是新功能增加之後，需手動下載新版插件做安裝
+- 先移除舊版
+  ![remove old version](https://imgur.com/FOCX5Md.jpg)
+- 點擊「載入未封裝項目」
+  ![load unpacked](https://imgur.com/htMcmWQ.jpg)
+
 ### 如何使用?
 
 每次重新整理或進入「訂單總覽」頁面之後，需手動點擊「載入插件」
