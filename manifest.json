@@ -13,7 +13,7 @@
     },
     "content_scripts": [
         {
-            "matches": ["https://dinbendon.net/*"],
+            "matches": ["https://www.dinbendon.net/*"],
             "js": ["content-script.js"]
         }
     ]
