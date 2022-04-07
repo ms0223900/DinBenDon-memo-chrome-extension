@@ -11,6 +11,7 @@
             min-width: 300px;
         }
     </style>
+    <link href="./index.css" rel="stylesheet">
 </head>
 
 <body>
@@ -22,6 +23,12 @@
         <p>
             如已經載入插件，有新訂單時，需重新整理，並重新點擊按鈕載入插件。
         </p>
+        <hr />
+        <label class="init-check-condition-input--wrapper">
+            <h5>輸入預設篩選條件(需在載入插件前先填入)</h5>
+            <p>預設為只顯示包含"市場"字樣的購買者</p>
+            <input placeholder="輸入預設篩選條件" value="" id="initCheckConditionInput" />
+        </label>
         <hr />
         <div>
             <button id="reloadPage">

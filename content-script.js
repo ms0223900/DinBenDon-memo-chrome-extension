@@ -1,7 +1,8 @@
+const regex = {
+    TR_INNER_TEXT_FOR_FILTER: /市場/g
+}
+
 function loadPlugin() {
-    const regex = {
-        TR_INNER_TEXT_FOR_FILTER: /市場/g
-    }
 
     const EL_ATTRIBUTES = {
         change: 'small-change-to-give',
@@ -209,7 +210,7 @@ function loadPlugin() {
         }
 
         const updateAllListeners = () => {
-            if(JSON.stringify(state) === JSON.stringify(prevState)) return;
+            if (JSON.stringify(state) === JSON.stringify(prevState)) return;
             listeners.forEach(l => l(state))
         }
 
@@ -283,7 +284,7 @@ function loadPlugin() {
                     })
                     break;
                 }
-                    
+
                 default:
                     break;
             }
@@ -501,7 +502,9 @@ function loadPlugin() {
         trEl.appendChild(cell);
 
         CtxState.addListener((s) => {
-            const { moneyChangesKeyVal} = s
+            const {
+                moneyChangesKeyVal
+            } = s
             const val = moneyChangesKeyVal[trKey];
 
             inputEl.value = val || '';
@@ -548,7 +551,10 @@ function loadPlugin() {
         const trKey = getTrKey(trEl);
 
         CtxState.addListener((s) => {
-            const { moneyChangesKeyVal, checkedKeyVal, } = s;
+            const {
+                moneyChangesKeyVal,
+                checkedKeyVal,
+            } = s;
             const checked = checkedKeyVal[trKey];
             const moneyChangeVal = moneyChangesKeyVal[trKey];
             // console.log(trKey, moneyChangeVal)
@@ -561,7 +567,10 @@ function loadPlugin() {
         })
 
         CtxState.addListener((s) => {
-            const { moneyChangesKeyVal, checkedKeyVal, } = s;
+            const {
+                moneyChangesKeyVal,
+                checkedKeyVal,
+            } = s;
             const checked = checkedKeyVal[trKey];
             // console.log(checked)
             const moneyChangeVal = moneyChangesKeyVal[trKey];
@@ -571,10 +580,14 @@ function loadPlugin() {
         })
 
         CtxState.addListener((s) => {
-            const { toggleHideCheckedTrList, checkedKeyVal, moneyChangesKeyVal } = s;
+            const {
+                toggleHideCheckedTrList,
+                checkedKeyVal,
+                moneyChangesKeyVal
+            } = s;
             const checked = checkedKeyVal[trKey];
             const moneyChangeVal = moneyChangesKeyVal[trKey];
-            
+
             const shouldHidden = checked && toggleHideCheckedTrList && !moneyChangeVal
             const styleObj = {
                 visibility: shouldHidden ? 'collapse' : null
@@ -625,9 +638,14 @@ function loadPlugin() {
     main();
 }
 
+function updateInitCheckConditionRegEx(input) {
+    regex.TR_INNER_TEXT_FOR_FILTER = new RegExp(input, 'g');
+}
+
 const MESSAGE = {
     INIT: 'INIT',
     RELOAD_PAGE: 'RELOAD_PAGE',
+    UPDATE_CHECK_CONDITION: 'UPDATE_CHECK_CONDITION',
 }
 
 chrome.runtime.onMessage.addListener((mes, sender, sendRes) => {
@@ -637,7 +655,9 @@ chrome.runtime.onMessage.addListener((mes, sender, sendRes) => {
             loadPlugin();
             break;
         case MESSAGE.RELOAD_PAGE:
-            window.location.reload()
+            window.location.reload();
+        case MESSAGE.UPDATE_CHECK_CONDITION:
+            updateInitCheckConditionRegEx(mes.payload.value);
         default:
             break;
     }

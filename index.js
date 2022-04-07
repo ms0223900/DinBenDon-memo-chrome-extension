@@ -1,10 +1,12 @@
 const MESSAGE = {
     INIT: 'INIT',
     RELOAD_PAGE: 'RELOAD_PAGE',
+    UPDATE_CHECK_CONDITION: 'UPDATE_CHECK_CONDITION',
 }
 
-const makeActionMessage = (mes) => ({
+const makeActionMessage = (mes, payload = {}) => ({
     action: mes,
+    payload,
 })
 
 const sendMessageCurrentTab = (messageObj) => {
@@ -28,4 +30,12 @@ const reloadPageBtn = document.getElementById('reloadPage');
 reloadPageBtn.addEventListener('click', () => {
     const message = makeActionMessage(MESSAGE.RELOAD_PAGE)
     sendMessageCurrentTab(message)
+})
+
+const initCheckConditionInput = document.getElementById('initCheckConditionInput');
+initCheckConditionInput.addEventListener('change', (e) => {
+    const message = makeActionMessage(MESSAGE.UPDATE_CHECK_CONDITION, {
+        value: e.target.value,
+    })
+    sendMessageCurrentTab(message);
 })
