@@ -8,6 +8,31 @@ const makeActionMessage = (mes, payload = {}) => ({
     action: mes,
     payload,
 })
+const InitCheckConditionHandler = {
+    key: 'INIT_CHECK_CONDITION',
+
+    setToLS(inputVal) {
+        localStorage.setItem(this.key, inputVal)
+    },
+
+    getValueFromLS() {
+        const res = localStorage.getItem(this.key);
+        return res ?? '市場'
+    },
+
+    // sendMessage(el, ) {},
+
+    setInitMessage(el = document.createElement('input')) {
+        const valFromLS = this.getValueFromLS();
+        if(el) {
+            el.value = valFromLS;
+        }
+        const message = makeActionMessage(MESSAGE.UPDATE_CHECK_CONDITION, {
+            value: valFromLS,
+        })
+        sendMessageCurrentTab(message);
+    }
+}
 
 const sendMessageCurrentTab = (messageObj) => {
     chrome.tabs.query({
@@ -18,7 +43,7 @@ const sendMessageCurrentTab = (messageObj) => {
 
         });
     });
-} 
+}
 
 const loadPluginBtn = document.getElementById('loadPluginBtn');
 loadPluginBtn.addEventListener('click', () => {
@@ -30,12 +55,17 @@ const reloadPageBtn = document.getElementById('reloadPage');
 reloadPageBtn.addEventListener('click', () => {
     const message = makeActionMessage(MESSAGE.RELOAD_PAGE)
     sendMessageCurrentTab(message)
+    InitCheckConditionHandler.setInitMessage();
 })
 
+
 const initCheckConditionInput = document.getElementById('initCheckConditionInput');
-initCheckConditionInput.addEventListener('change', (e) => {
+InitCheckConditionHandler.setInitMessage(initCheckConditionInput);
+initCheckConditionInput.addEventListener('input', (e) => {
+    const inputVal = e.target.value
     const message = makeActionMessage(MESSAGE.UPDATE_CHECK_CONDITION, {
-        value: e.target.value,
+        value: inputVal,
     })
+    InitCheckConditionHandler.setToLS(inputVal);
     sendMessageCurrentTab(message);
 })

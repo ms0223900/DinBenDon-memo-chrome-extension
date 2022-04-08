@@ -111,15 +111,23 @@ function loadPlugin() {
     const hideUselessComponents = () => {
         const header = document.getElementById('header');
         header.style.display = 'none';
+
         const titles = document.getElementsByTagName('h3');
         // console.log(titles);
         titles && [...titles].forEach(el => el.style.display = 'none');
+
         const tabList = document.querySelector('ul[role="tablist"]');
         tabList.style.display = 'none';
+
         const adPartElList = document.querySelectorAll('div.d-print-none');
         adPartElList.forEach(adPart => {
             adPart.style.display = 'none'
         });
+
+        const thead = document.querySelector('.tiles.merge-table')?.querySelector('thead')
+        if(thead) {
+            thead.style.display = 'none'
+        };
     }
     const hideNotOurGroupTrList = (trElList = []) => {
         trElList.forEach(el => {
