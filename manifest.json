@@ -14,7 +14,7 @@
     "content_scripts": [
         {
             "matches": [
-                "https://*/*"
+                "https://*.dinbendon.net/*"
             ],
             "js": [
                 "content-script.js"
