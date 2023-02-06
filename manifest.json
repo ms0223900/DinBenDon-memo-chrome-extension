@@ -8,6 +8,12 @@
         "tabs",
         "storage"
     ],
+    "icons": {
+        "16": "D_Egg.png",
+        "32": "D_Egg.png",
+        "48": "D_Egg.png",
+        "128": "D_Egg.png"
+    },
     "action": {
         "default_popup": "index.html"
     },
